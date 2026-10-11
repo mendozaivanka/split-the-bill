@@ -1,0 +1,13 @@
+{
+  "name": "expense-splitter-react",
+  "version": "1.0.0",
+  "description": "Group expense splitter using Express and React",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
+}
