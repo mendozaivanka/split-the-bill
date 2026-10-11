@@ -1,26 +1,23 @@
 function SettlementsSummary({ balances, settlements, expenses, hasExpenses }) {
+    const [copied, setCopied] = React.useState(false);
     const formatCurrency = (val) => (val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const copySummary = () => {
         if (!hasExpenses) return alert('No expenses logged to copy.');
 
-        let text = `┌──────────────────────────┐\n`;
-        text += `│    🧾 SPLIT THE BILL     │\n`;
-        text += `└──────────────────────────┘\n\n`;
+        let text = `🧾 SPLIT THE BILL\n`;
 
-        // 1. Who Pays Who (Top Priority)
-        text += `📌 WHO PAYS WHO\n`;
+        text += `📌 *WHO PAYS WHO*\n`;
         if (settlements.length) {
             settlements.forEach(s => {
-                text += `💸 ${s.from} ➔ ${s.to} = ₱${formatCurrency(s.amount)}\n`;
+                text += `👉 ${s.from} ➔ ${s.to} = ₱${formatCurrency(s.amount)}\n`;
             });
         } else {
-            text += `💸 All accounts settled! 🎉\n`;
+            text += `👉 All accounts settled!\n`;
         }
         text += `\n`;
 
-        // 2. Individual Net Balances
-        text += `⚖️ *NET BALANCES*\n`;
+        text += `⚖️ NET BALANCES\n`;
         Object.entries(balances).forEach(([person, amt]) => {
             if (amt > 0.01) {
                 text += `  • ${person}: +₱${formatCurrency(amt)} (gets back)\n`;
@@ -32,7 +29,6 @@ function SettlementsSummary({ balances, settlements, expenses, hasExpenses }) {
         });
         text += `\n`;
 
-        // 3. Itemized Expenses & Prorated Share Breakdown
         text += `📊 SUMMARY PER ITEM\n`;
         expenses.forEach((e, i) => {
             text += `[${i + 1}] ${e.title} — ₱${formatCurrency(e.amount)} (Paid by ${e.payer})\n`;
@@ -52,17 +48,32 @@ function SettlementsSummary({ balances, settlements, expenses, hasExpenses }) {
         });
 
         navigator.clipboard.writeText(text);
-        alert('Summary copied to clipboard! Ready to paste into group chats.');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
     };
 
     return (
         <section className="card highlight">
             <div className="card-header">
-                <h2>Optimized Settlements</h2>
-                <button onClick={copySummary} className="btn outline small" disabled={!hasExpenses}>📋 Copy Summary</button>
+                <h2>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="section-icon"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Optimized Settlements
+                </h2>
+                <button onClick={copySummary} className="btn outline small icon-btn" disabled={!hasExpenses}>
+                    {copied ? (
+                        <>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Copied
+                        </>
+                    ) : (
+                        <>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            Copy Summary
+                        </>
+                    )}
+                </button>
             </div>
 
-            {/* Net Balances Display */}
             <div className="balances-grid">
                 {Object.keys(balances).length === 0 ? (
                     <p className="empty-row">Balances will update automatically once expenses are added.</p>
@@ -84,12 +95,11 @@ function SettlementsSummary({ balances, settlements, expenses, hasExpenses }) {
 
             <hr className="divider" />
 
-            {/* Settlement List */}
             <div className="settlements-list">
                 {!hasExpenses ? (
                     <p className="empty-row">No settlements required yet.</p>
                 ) : settlements.length === 0 ? (
-                    <p className="empty-row">All debts are fully settled! 🎉</p>
+                    <p className="empty-row">All debts are fully settled!</p>
                 ) : (
                     settlements.map((s, i) => (
                         <div key={i} className="settlement-item">

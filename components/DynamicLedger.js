@@ -1,7 +1,10 @@
 function DynamicLedger({ expenses, members, onUpdateExpense, onDeleteExpense, onToggleSplit, onUpdateCustomShare }) {
     return (
         <section className="card">
-            <h2>Ledger</h2>
+            <h2>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="section-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Dynamic Ledger (Editable)
+            </h2>
             <div className="expenses-list">
                 {expenses.length === 0 ? (
                     <p className="empty-row">No expenses logged yet. Fill out the form on the left to add items.</p>
@@ -35,22 +38,28 @@ function DynamicLedger({ expenses, members, onUpdateExpense, onDeleteExpense, on
                                 >
                                     {members.map(m => <option key={m} value={m}>{m}</option>)}
                                 </select>
-                                <button className="btn outline small danger" onClick={() => onDeleteExpense(exp.id)}>🗑️</button>
+                                <button className="btn outline small danger icon-only-btn" onClick={() => onDeleteExpense(exp.id)} title="Delete expense">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                </button>
                             </div>
 
                             {exp.splitMode === 'CUSTOM' ? (
-                                <div className="custom-shares-inline">
-                                    <div className="split-label">Custom Shares:</div>
-                                    <div className="shares-grid-inline">
+                                <div className="compact-shares-wrapper">
+                                    <span className="split-label">Custom Shares:</span>
+                                    <div className="compact-shares-grid">
                                         {members.map(m => (
-                                            <div key={m} className="share-pill-input">
-                                                <label>{m}:</label>
-                                                <input 
-                                                    type="number" 
-                                                    step="0.01"
-                                                    value={exp.customShares[m] || 0}
-                                                    onChange={(e) => onUpdateCustomShare(exp.id, m, e.target.value)}
-                                                />
+                                            <div key={m} className="compact-share-chip">
+                                                <span className="chip-name">{m}</span>
+                                                <div className="chip-input-group">
+                                                    <span>₱</span>
+                                                    <input 
+                                                        type="number" 
+                                                        step="0.01"
+                                                        value={exp.customShares[m] || ''}
+                                                        onChange={(e) => onUpdateCustomShare(exp.id, m, e.target.value)}
+                                                        placeholder="0"
+                                                    />
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

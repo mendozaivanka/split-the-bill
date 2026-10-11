@@ -1,5 +1,5 @@
 function ExpenseForm({ members, onAddExpense }) {
-    const [splitMode, setSplitMode] = React.useState('EQUAL'); // 'EQUAL' or 'CUSTOM'
+    const [splitMode, setSplitMode] = React.useState('EQUAL');
     const [form, setForm] = React.useState({
         title: '',
         amount: '',
@@ -17,10 +17,7 @@ function ExpenseForm({ members, onAddExpense }) {
     }, [members]);
 
     const handleCustomShareChange = (person, val) => {
-        const numVal = parseFloat(val) || 0;
         const updatedShares = { ...form.customShares, [person]: val };
-        
-        // Auto calculate total sum if custom shares mode
         const newTotal = Object.values(updatedShares).reduce((acc, curr) => acc + (parseFloat(curr) || 0), 0);
 
         setForm({
@@ -33,9 +30,30 @@ function ExpenseForm({ members, onAddExpense }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!form.payer) return alert('Select who paid for this expense.');
-        if (!form.splitWith.length) return alert('Select at least one person to split with.');
 
-        const totalAmt = parseFloat(form.amount) || 0;
+        let totalAmt = 0;
+        let customSharesClean = {};
+        let activeMembers = [];
+
+        if (splitMode === 'CUSTOM') {
+            Object.entries(form.customShares).forEach(([person, val]) => {
+                const num = parseFloat(val) || 0;
+                if (num > 0) {
+                    customSharesClean[person] = num;
+                    activeMembers.push(person);
+                    totalAmt += num;
+                }
+            });
+
+            if (activeMembers.length === 0) {
+                return alert('Please enter at least one custom share amount.');
+            }
+        } else {
+            totalAmt = parseFloat(form.amount) || 0;
+            activeMembers = [...form.splitWith];
+            if (!activeMembers.length) return alert('Select at least one person to split with.');
+        }
+
         if (totalAmt <= 0) return alert('Please enter a valid amount.');
 
         onAddExpense({
@@ -44,17 +62,17 @@ function ExpenseForm({ members, onAddExpense }) {
             amount: totalAmt,
             payer: form.payer,
             splitMode,
-            splitWith: [...form.splitWith],
-            customShares: { ...form.customShares }
+            splitWith: activeMembers,
+            customShares: customSharesClean
         });
 
-        // Reset inputs
-        setForm(prev => ({
-            ...prev,
+        setForm({
             title: '',
             amount: '',
+            payer: members[0] || '',
+            splitWith: [...members],
             customShares: {}
-        }));
+        });
     };
 
     const toggleSplit = (memberName) => {
@@ -69,7 +87,10 @@ function ExpenseForm({ members, onAddExpense }) {
 
     return (
         <section className="card">
-            <h2>2. Add New Expense</h2>
+            <h2>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="section-icon"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 6v12"/></svg>
+                Add New Expense
+            </h2>
             <form onSubmit={handleSubmit}>
                 <div className="form-field">
                     <label>Description / Item</label>
@@ -125,7 +146,7 @@ function ExpenseForm({ members, onAddExpense }) {
                             disabled={members.length === 0}
                         >
                             {members.length === 0 ? (
-                                <option value="">Add a friend first</option>
+                                <option value="">Add a member first</option>
                             ) : (
                                 members.map(m => <option key={m} value={m}>{m}</option>)
                             )}
@@ -138,7 +159,7 @@ function ExpenseForm({ members, onAddExpense }) {
                         <label>Split Among</label>
                         <div className="checkbox-grid">
                             {members.length === 0 ? (
-                                <span className="empty-hint">Add friends above first.</span>
+                                <span className="empty-hint">Add group members above first.</span>
                             ) : (
                                 members.map(m => (
                                     <label key={m} className="checkbox-item">
@@ -172,8 +193,9 @@ function ExpenseForm({ members, onAddExpense }) {
                     </div>
                 )}
 
-                <button type="submit" className="btn success full-width" disabled={members.length === 0}>
-                    + Add Expense
+                <button type="submit" className="btn success full-width icon-btn" disabled={members.length === 0}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add Expense
                 </button>
             </form>
         </section>

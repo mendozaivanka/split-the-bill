@@ -512,3 +512,97 @@ input:focus, select:focus {
     align-items: center;
     gap: 8px;
 }
+
+/* Inline Icon Alignment Helpers */
+.section-icon {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+    color: var(--accent-hover);
+}
+
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.icon-only-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 8px !important;
+}
+
+.live-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background-color: var(--accent);
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+/* Compact Inline Custom Shares Styling */
+.compact-shares-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--card-border);
+    flex-wrap: wrap;
+}
+
+.compact-shares-grid {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.compact-share-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.chip-name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.chip-input-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.chip-input-group span {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.chip-input-group input {
+    width: 48px !important;
+    padding: 1px 4px !important;
+    font-size: 0.75rem !important;
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid var(--card-border) !important;
+    border-radius: 0 !important;
+    color: var(--text-primary) !important;
+}
+
+.chip-input-group input:focus {
+    border-bottom-color: var(--accent) !important;
+    outline: none !important;
+}

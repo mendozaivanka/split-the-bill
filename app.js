@@ -10,7 +10,7 @@ function App() {
     const socketRef = useRef(null);
 
     useEffect(() => {
-        socketRef.current = io();
+        socketRef.current = io(window.location.origin);
 
         socketRef.current.on('room_created', ({ code, roomData }) => {
             setRoomCode(code);
@@ -33,6 +33,12 @@ function App() {
             alert(msg);
         });
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const codeFromUrl = urlParams.get('room');
+        if (codeFromUrl) {
+            joinRoom(codeFromUrl);
+        }
+
         return () => socketRef.current.disconnect();
     }, []);
 
@@ -40,17 +46,6 @@ function App() {
         calculateSettlements();
     }, [expenses]);
 
-    // Inside App() component in public/app.js:
-    useEffect(() => {
-        // Check if room code exists in URL query string (e.g., ?room=X7K9P2)
-        const urlParams = new URLSearchParams(window.location.search);
-        const codeFromUrl = urlParams.get('room');
-        if (codeFromUrl) {
-            joinRoom(codeFromUrl);
-        }
-    }, []);
-
-    // Push local state updates to room session
     const emitStateChange = (newMembers, newExpenses) => {
         setMembers(newMembers);
         setExpenses(newExpenses);
@@ -84,9 +79,7 @@ function App() {
         }
     };
 
-    // --- Room Actions with Explicit State Reset ---
     const createRoom = () => {
-        // Reset state before creating a room
         setMembers([]);
         setExpenses([]);
         setBalances({});
@@ -95,7 +88,6 @@ function App() {
     };
 
     const joinRoom = (code) => {
-        // Reset state before joining a new room
         setMembers([]);
         setExpenses([]);
         setBalances({});
@@ -111,7 +103,6 @@ function App() {
         setSettlements([]);
     };
 
-    // --- Member Actions ---
     const addMember = (name) => {
         if (!members.includes(name)) {
             emitStateChange([...members, name], expenses);
@@ -128,7 +119,6 @@ function App() {
         emitStateChange(updatedMembers, updatedExpenses);
     };
 
-    // --- Expense Actions ---
     const addExpense = (newExp) => emitStateChange(members, [...expenses, newExp]);
 
     const updateExpense = (id, field, value) => {
@@ -139,9 +129,17 @@ function App() {
     const updateCustomShare = (id, memberName, value) => {
         const updatedExpenses = expenses.map(exp => {
             if (exp.id === id) {
-                const updatedShares = { ...exp.customShares, [memberName]: parseFloat(value) || 0 };
-                const newTotal = Object.values(updatedShares).reduce((a, b) => a + b, 0);
-                return { ...exp, customShares: updatedShares, amount: newTotal };
+                const numVal = parseFloat(value) || 0;
+                const updatedShares = { ...exp.customShares, [memberName]: numVal };
+                const newTotal = Object.values(updatedShares).reduce((a, b) => a + (parseFloat(b) || 0), 0);
+                const activeMembers = Object.keys(updatedShares).filter(m => (parseFloat(updatedShares[m]) || 0) > 0);
+
+                return { 
+                    ...exp, 
+                    customShares: updatedShares, 
+                    splitWith: activeMembers, 
+                    amount: newTotal 
+                };
             }
             return exp;
         });
@@ -173,7 +171,7 @@ function App() {
         <div className="app-container">
             <header className="app-header">
                 <h1>💸 Split the Bill</h1>
-                <p>For those lazy to compute expenses</p>
+                <p>Settle your expenses in seconds</p>
             </header>
 
             <RoomManager 
