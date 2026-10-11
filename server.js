@@ -5,19 +5,31 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// 1. Serve static files directly from the repository root directory
+app.use(express.static(path.join(__dirname)));
+
+// Configure Socket.IO with CORS
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Allows requests from your frontend
+    methods: ["GET", "POST"]
+  }
+});
 
 // In-Memory Room Data Store
+// { "ROOM12": { members: [], expenses: [] } }
 const rooms = {};
 
+// Generate 6-Character Room Code
 function generateRoomCode() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+// Debt Simplification Core Engine
 function simplifyDebts(expenses) {
     const balances = {};
 
@@ -78,48 +90,51 @@ function simplifyDebts(expenses) {
     return { balances, settlements };
 }
 
+// API Endpoint
 app.post('/api/calculate', (req, res) => {
     const { expenses } = req.body;
     if (!Array.isArray(expenses)) return res.status(400).json({ error: 'Invalid expenses array.' });
     res.json(simplifyDebts(expenses));
 });
 
-// Socket.IO Room Lifecycle
+// Real-Time Socket.IO Logic
 io.on('connection', (socket) => {
+    // 1. Create a new room
     socket.on('create_room', () => {
         let code = generateRoomCode();
-        while (rooms[code]) code = generateRoomCode();
+        while (rooms[code]) code = generateRoomCode(); // Ensure uniqueness
 
-        // Initialize fresh empty room
         rooms[code] = { members: [], expenses: [] };
         socket.join(code);
         socket.emit('room_created', { code, roomData: rooms[code] });
     });
 
+    // 2. Join an existing room by code
     socket.on('join_room', (code) => {
         const upperCode = (code || '').toUpperCase().trim();
         if (rooms[upperCode]) {
             socket.join(upperCode);
-            // Send existing room data to joining member
             socket.emit('room_joined', { code: upperCode, roomData: rooms[upperCode] });
         } else {
             socket.emit('error_message', 'Room code not found. Check the code and try again.');
         }
     });
 
+    // 3. Sync state changes across all devices in the room
     socket.on('update_room_data', ({ code, roomData }) => {
         if (rooms[code]) {
             rooms[code] = roomData;
-            // Broadcast updated data to everyone in the room
+            // Broadcast updated data to everyone else in the room
             io.to(code).emit('room_data_updated', roomData);
         }
     });
 });
 
+// Fallback to index.html in the root directory for single page application routing
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 server.listen(PORT, () => {
-    console.log(`🚀 Real-Time Expense Server running at http://localhost:${PORT}`);
+    console.log(`🚀 Real-Time Expense Server running on port ${PORT}`);
 });
