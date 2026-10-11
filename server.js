@@ -5,11 +5,20 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// 1. Serve static files directly from the repository root directory
+app.use(express.static(path.join(__dirname)));
+
+// Configure Socket.IO with CORS
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Allows requests from your frontend
+    methods: ["GET", "POST"]
+  }
+});
 
 // In-Memory Room Data Store
 // { "ROOM12": { members: [], expenses: [] } }
@@ -121,10 +130,11 @@ io.on('connection', (socket) => {
     });
 });
 
+// Fallback to index.html in the root directory for single page application routing
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 server.listen(PORT, () => {
-    console.log(`🚀 Real-Time Expense Server running at http://localhost:${PORT}`);
+    console.log(`🚀 Real-Time Expense Server running on port ${PORT}`);
 });
