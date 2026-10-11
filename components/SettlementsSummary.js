@@ -4,66 +4,62 @@ function SettlementsSummary({ balances, settlements, expenses, hasExpenses }) {
     const copySummary = () => {
         if (!hasExpenses) return alert('No expenses logged to copy.');
 
-        let text = `📊 SPLIT THE BILL - EXPENSE & SETTLEMENT BREAKDOWN\n`;
-        text += `=============================================\n\n`;
+        let text = `┌──────────────────────────┐\n`;
+        text += `│    🧾 SPLIT THE BILL     │\n`;
+        text += `└──────────────────────────┘\n\n`;
 
-        // 1. Itemized Expenses
-        text += `📝 ITEMIZED EXPENSES LOG\n`;
-        text += `---------------------------------------------\n`;
-        expenses.forEach((e, idx) => {
-            text += `${idx + 1}. *${e.title}*\n`;
-            text += `   • Total: ₱${formatCurrency(e.amount)}\n`;
-            text += `   • Paid by: ${e.payer}\n`;
+        // 1. Who Pays Who (Top Priority)
+        text += `📌 WHO PAYS WHO\n`;
+        if (settlements.length) {
+            settlements.forEach(s => {
+                text += `💸 ${s.from} ➔ ${s.to} = ₱${formatCurrency(s.amount)}\n`;
+            });
+        } else {
+            text += `💸 All accounts settled! 🎉\n`;
+        }
+        text += `\n`;
 
-            if (e.splitMode === 'CUSTOM' && e.customShares) {
-                const sharesList = Object.entries(e.customShares)
-                    .filter(([_, amt]) => parseFloat(amt) > 0)
-                    .map(([person, amt]) => `${person}: ₱${formatCurrency(amt)}`)
-                    .join(', ');
-                text += `   • Custom Share Breakdown: ${sharesList}\n`;
-            } else {
-                const group = e.splitWith || [];
-                const perPerson = group.length ? (e.amount / group.length) : 0;
-                text += `   • Equal Split (${group.length} people): ₱${formatCurrency(perPerson)} each (${group.join(', ')})\n`;
-            }
-            text += `\n`;
-        });
-
-        // 2. Net Balances
-        text += `⚖️ NET INDIVIDUAL BALANCES\n`;
-        text += `---------------------------------------------\n`;
+        // 2. Individual Net Balances
+        text += `⚖️ *NET BALANCES*\n`;
         Object.entries(balances).forEach(([person, amt]) => {
             if (amt > 0.01) {
-                text += `   • ${person}: +₱${formatCurrency(amt)} (is owed)\n`;
+                text += `  • ${person}: +₱${formatCurrency(amt)} (gets back)\n`;
             } else if (amt < -0.01) {
-                text += `   • ${person}: -₱${formatCurrency(Math.abs(amt))} (owes)\n`;
+                text += `  • ${person}: -₱${formatCurrency(Math.abs(amt))} (owes)\n`;
             } else {
-                text += `   • ${person}: ₱0.00 (fully settled)\n`;
+                text += `  • ${person}: ₱0.00 (settled)\n`;
             }
         });
         text += `\n`;
 
-        // 3. Final Settlement Instructions
-        text += `💡 OPTIMIZED SETTLEMENT INSTRUCTIONS\n`;
-        text += `---------------------------------------------\n`;
-        if (settlements.length) {
-            settlements.forEach(s => {
-                text += `👉 *${s.from}* pays *${s.to}* ➔ ₱${formatCurrency(s.amount)}\n`;
-            });
-        } else {
-            text += `🎉 Everyone is completely settled up!\n`;
-        }
+        // 3. Itemized Expenses & Prorated Share Breakdown
+        text += `📊 SUMMARY PER ITEM\n`;
+        expenses.forEach((e, i) => {
+            text += `[${i + 1}] ${e.title} — ₱${formatCurrency(e.amount)} (Paid by ${e.payer})\n`;
+            
+            if (e.splitMode === 'CUSTOM' && e.customShares) {
+                Object.entries(e.customShares).forEach(([p, amt]) => {
+                    const numAmt = parseFloat(amt) || 0;
+                    if (numAmt > 0) {
+                        text += `    ▪ ${p}: ₱${formatCurrency(numAmt)}\n`;
+                    }
+                });
+            } else {
+                const group = e.splitWith || [];
+                const perPerson = group.length ? (e.amount / group.length) : 0;
+                text += `    ▪ Equal Split: ₱${formatCurrency(perPerson)} × ${group.length} members\n`;
+            }
+        });
 
-        // Copy to clipboard
         navigator.clipboard.writeText(text);
-        alert('Detailed summary copied to clipboard! Ready to paste into group chats.');
+        alert('Summary copied to clipboard! Ready to paste into group chats.');
     };
 
     return (
         <section className="card highlight">
             <div className="card-header">
                 <h2>Optimized Settlements</h2>
-                <button onClick={copySummary} className="btn outline small" disabled={!hasExpenses}>📋 Copy Detailed Summary</button>
+                <button onClick={copySummary} className="btn outline small" disabled={!hasExpenses}>📋 Copy Summary</button>
             </div>
 
             {/* Net Balances Display */}
