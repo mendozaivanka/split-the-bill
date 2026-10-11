@@ -252,3 +252,8 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
     color: var(--text-muted);
     display: block;
 }
+.room-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}

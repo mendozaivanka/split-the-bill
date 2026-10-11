@@ -10,24 +10,23 @@ function App() {
     const socketRef = useRef(null);
 
     useEffect(() => {
-        // Initialize Socket.io Connection
         socketRef.current = io();
 
         socketRef.current.on('room_created', ({ code, roomData }) => {
             setRoomCode(code);
-            setMembers(roomData.members);
-            setExpenses(roomData.expenses);
+            setMembers(roomData.members || []);
+            setExpenses(roomData.expenses || []);
         });
 
         socketRef.current.on('room_joined', ({ code, roomData }) => {
             setRoomCode(code);
-            setMembers(roomData.members);
-            setExpenses(roomData.expenses);
+            setMembers(roomData.members || []);
+            setExpenses(roomData.expenses || []);
         });
 
         socketRef.current.on('room_data_updated', (roomData) => {
-            setMembers(roomData.members);
-            setExpenses(roomData.expenses);
+            setMembers(roomData.members || []);
+            setExpenses(roomData.expenses || []);
         });
 
         socketRef.current.on('error_message', (msg) => {
@@ -37,12 +36,21 @@ function App() {
         return () => socketRef.current.disconnect();
     }, []);
 
-    // Recalculate settlements whenever expenses change
     useEffect(() => {
         calculateSettlements();
     }, [expenses]);
 
-    // Helper: Push changes to server room state
+    // Inside App() component in public/app.js:
+    useEffect(() => {
+        // Check if room code exists in URL query string (e.g., ?room=X7K9P2)
+        const urlParams = new URLSearchParams(window.location.search);
+        const codeFromUrl = urlParams.get('room');
+        if (codeFromUrl) {
+            joinRoom(codeFromUrl);
+        }
+    }, []);
+
+    // Push local state updates to room session
     const emitStateChange = (newMembers, newExpenses) => {
         setMembers(newMembers);
         setExpenses(newExpenses);
@@ -76,16 +84,34 @@ function App() {
         }
     };
 
-    // Room handlers
-    const createRoom = () => socketRef.current.emit('create_room');
-    const joinRoom = (code) => socketRef.current.emit('join_room', code);
+    // --- Room Actions with Explicit State Reset ---
+    const createRoom = () => {
+        // Reset state before creating a room
+        setMembers([]);
+        setExpenses([]);
+        setBalances({});
+        setSettlements([]);
+        socketRef.current.emit('create_room');
+    };
+
+    const joinRoom = (code) => {
+        // Reset state before joining a new room
+        setMembers([]);
+        setExpenses([]);
+        setBalances({});
+        setSettlements([]);
+        socketRef.current.emit('join_room', code);
+    };
+
     const leaveRoom = () => {
         setRoomCode('');
         setMembers([]);
         setExpenses([]);
+        setBalances({});
+        setSettlements([]);
     };
 
-    // Member actions
+    // --- Member Actions ---
     const addMember = (name) => {
         if (!members.includes(name)) {
             emitStateChange([...members, name], expenses);
@@ -102,7 +128,7 @@ function App() {
         emitStateChange(updatedMembers, updatedExpenses);
     };
 
-    // Expense actions
+    // --- Expense Actions ---
     const addExpense = (newExp) => emitStateChange(members, [...expenses, newExp]);
 
     const updateExpense = (id, field, value) => {
@@ -146,8 +172,8 @@ function App() {
     return (
         <div className="app-container">
             <header className="app-header">
-                <h1>Split the Bill</h1>
-                <p>Settle up with your friends in seconds</p>
+                <h1>💸 Split the Bill</h1>
+                <p>For those lazy to compute expenses</p>
             </header>
 
             <RoomManager 
