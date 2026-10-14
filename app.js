@@ -111,11 +111,16 @@ function App() {
 
     const removeMember = (name) => {
         const updatedMembers = members.filter(m => m !== name);
-        const updatedExpenses = expenses.map(exp => ({
-            ...exp,
-            payer: exp.payer === name ? (updatedMembers[0] || '') : exp.payer,
-            splitWith: exp.splitWith.filter(m => m !== name)
-        }));
+        const updatedExpenses = expenses.map(exp => {
+            const payer = exp.payer === name ? (updatedMembers[0] || '') : exp.payer;
+            const splitWith = exp.splitWith.filter(m => m !== name);
+            if (exp.splitMode !== 'CUSTOM' || !exp.customShares) {
+                return { ...exp, payer, splitWith };
+            }
+            const { [name]: _removed, ...customShares } = exp.customShares;
+            const amount = Object.values(customShares).reduce((a, b) => a + (parseFloat(b) || 0), 0);
+            return { ...exp, payer, splitWith, customShares, amount };
+        });
         emitStateChange(updatedMembers, updatedExpenses);
     };
 
