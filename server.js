@@ -2,6 +2,8 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const crypto = require('crypto');
+const { Pool } = require('pg');
 
 const app = express();
 const server = http.createServer(app);
@@ -23,6 +25,49 @@ const io = new Server(server, {
 // In-Memory Room Data Store
 // { "ROOM12": { members: [], expenses: [] } }
 const rooms = {};
+
+// Private Persistent Session
+// A single passcode-protected room stored in Postgres. Enabled only when both
+// DATABASE_URL and PRIVATE_PASSCODE are set. The code is 7 chars, so it can
+// never collide with a generated 6-char room code.
+const PRIVATE_CODE = 'PRIVATE';
+const PRIVATE_PASSCODE = process.env.PRIVATE_PASSCODE || '';
+const pool = process.env.DATABASE_URL
+    ? new Pool({ connectionString: process.env.DATABASE_URL })
+    : null;
+const privateEnabled = Boolean(pool && PRIVATE_PASSCODE);
+let saveQueue = Promise.resolve();
+
+async function initPrivateSession() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS private_session (
+            id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+            data JSONB NOT NULL,
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+    `);
+    const { rows } = await pool.query('SELECT data FROM private_session WHERE id = 1');
+    rooms[PRIVATE_CODE] = rows[0] ? rows[0].data : { members: [], expenses: [] };
+}
+
+function savePrivateSession(roomData) {
+    // Chain writes so they reach the database in the order they were received
+    saveQueue = saveQueue.catch(() => {}).then(() => pool.query(
+        `INSERT INTO private_session (id, data, updated_at) VALUES (1, $1, NOW())
+         ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()`,
+        [JSON.stringify(roomData)]
+    ));
+    return saveQueue;
+}
+
+function passcodeMatches(input) {
+    const hash = (s) => crypto.createHash('sha256').update(String(s)).digest();
+    return crypto.timingSafeEqual(hash(input), hash(PRIVATE_PASSCODE));
+}
+
+function isValidRoomData(roomData) {
+    return roomData && Array.isArray(roomData.members) && Array.isArray(roomData.expenses);
+}
 
 // Generate 6-Character Room Code
 // function generateRoomCode() {
@@ -165,6 +210,10 @@ app.post('/api/calculate', (req, res) => {
     res.json(simplifyDebts(expenses));
 });
 
+app.get('/api/private-enabled', (req, res) => {
+    res.json({ enabled: privateEnabled });
+});
+
 io.on('connection', (socket) => {
     socket.on('create_room', () => {
         let code = generateRoomCode();
@@ -177,7 +226,7 @@ io.on('connection', (socket) => {
 
     socket.on('join_room', (code) => {
         const upperCode = (code || '').toUpperCase().trim();
-        if (rooms[upperCode]) {
+        if (upperCode !== PRIVATE_CODE && rooms[upperCode]) {
             socket.join(upperCode);
             socket.emit('room_joined', { code: upperCode, roomData: rooms[upperCode] });
         } else {
@@ -185,7 +234,31 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('update_room_data', ({ code, roomData }) => {
+    socket.on('join_private', (passcode) => {
+        if (!privateEnabled) {
+            return socket.emit('error_message', 'The private ledger is not set up on this server.');
+        }
+        if (!passcodeMatches(passcode || '')) {
+            return socket.emit('private_denied', 'Wrong passcode.');
+        }
+        socket.data.privateAuthed = true;
+        socket.join(PRIVATE_CODE);
+        socket.emit('room_joined', { code: PRIVATE_CODE, roomData: rooms[PRIVATE_CODE] });
+    });
+
+    socket.on('update_room_data', async ({ code, roomData }) => {
+        if (code === PRIVATE_CODE) {
+            if (!socket.data.privateAuthed || !isValidRoomData(roomData)) return;
+            try {
+                await savePrivateSession(roomData);
+            } catch (err) {
+                console.error('Private session save failed:', err);
+                return socket.emit('error_message', 'Could not save to the database. Your last change was not saved.');
+            }
+            rooms[PRIVATE_CODE] = roomData;
+            io.to(PRIVATE_CODE).emit('room_data_updated', roomData);
+            return;
+        }
         if (rooms[code]) {
             rooms[code] = roomData;
             io.to(code).emit('room_data_updated', roomData);
@@ -198,6 +271,17 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-server.listen(PORT, () => {
-    console.log(`🚀 Real-Time Expense Server running on port ${PORT}`);
+async function start() {
+    if (privateEnabled) {
+        await initPrivateSession();
+        console.log('🔒 Private ledger loaded from database');
+    }
+    server.listen(PORT, () => {
+        console.log(`🚀 Real-Time Expense Server running on port ${PORT}`);
+    });
+}
+
+start().catch((err) => {
+    console.error('Startup failed:', err);
+    process.exit(1);
 });

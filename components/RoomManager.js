@@ -1,6 +1,13 @@
-function RoomManager({ roomCode, onCreateRoom, onJoinRoom, onLeaveRoom }) {
+function RoomManager({ roomCode, isPrivate, privateEnabled, onCreateRoom, onJoinRoom, onJoinPrivate, onLeaveRoom }) {
     const [inputCode, setInputCode] = React.useState('');
     const [copied, setCopied] = React.useState(false);
+    const [passcode, setPasscode] = React.useState(() => {
+        try { return localStorage.getItem('privatePasscode') || ''; } catch (err) { return ''; }
+    });
+
+    const handleOpenPrivate = () => {
+        if (passcode.trim()) onJoinPrivate(passcode.trim());
+    };
 
     const handleJoin = () => {
         if (inputCode.trim()) {
@@ -63,18 +70,49 @@ function RoomManager({ roomCode, onCreateRoom, onJoinRoom, onLeaveRoom }) {
                             <button onClick={handleJoin} className="btn success">Join</button>
                         </div>
                     </div>
+                    {privateEnabled && (
+                        <>
+                            <div className="room-divider">OR</div>
+                            <div className="room-action">
+                                <h3>Our Private Ledger</h3>
+                                <div className="input-group">
+                                    <input 
+                                        type="password" 
+                                        value={passcode} 
+                                        onChange={(e) => setPasscode(e.target.value)} 
+                                        onKeyUp={(e) => e.key === 'Enter' && handleOpenPrivate()} 
+                                        placeholder="PASSCODE" 
+                                        autoComplete="current-password"
+                                    />
+                                    <button onClick={handleOpenPrivate} className="btn primary icon-btn">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                        Open
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             ) : (
                 <div className="active-room-bar">
                     <div className="room-info">
                         <span className="live-badge">
-                            <span className="live-dot"></span> LIVE SESSION
+                            <span className="live-dot"></span> {isPrivate ? 'PRIVATE · SAVED' : 'LIVE SESSION'}
                         </span>
-                        <h2>Room Code: <span className="code-highlight">{roomCode}</span></h2>
-                        <span className="sub-hint">Share this code with your friends so they can contribute in real-time.</span>
+                        {isPrivate ? (
+                            <>
+                                <h2>Our Private Ledger</h2>
+                                <span className="sub-hint">Every change is saved automatically. Only people with the passcode can open it.</span>
+                            </>
+                        ) : (
+                            <>
+                                <h2>Room Code: <span className="code-highlight">{roomCode}</span></h2>
+                                <span className="sub-hint">Share this code with your friends so they can contribute in real-time.</span>
+                            </>
+                        )}
                     </div>
                     <div className="room-actions-group">
-                        <button onClick={handleShare} className="btn primary small icon-btn">
+                        {!isPrivate && <button onClick={handleShare} className="btn primary small icon-btn">
                             {copied ? (
                                 <>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -86,7 +124,7 @@ function RoomManager({ roomCode, onCreateRoom, onJoinRoom, onLeaveRoom }) {
                                     Share Link
                                 </>
                             )}
-                        </button>
+                        </button>}
                         <button onClick={onLeaveRoom} className="btn outline danger small">Leave Session</button>
                     </div>
                 </div>

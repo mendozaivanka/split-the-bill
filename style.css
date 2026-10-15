@@ -111,7 +111,7 @@ body {
     gap: 8px; 
 }
 
-input[type="text"], input[type="number"], select {
+input[type="text"], input[type="number"], input[type="password"], select {
     width: 100%; 
     padding: 10px 14px; 
     background: var(--card-subtle); 

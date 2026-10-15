@@ -1,13 +1,18 @@
 const { useState, useEffect, useRef } = React;
 
+const PRIVATE_CODE = 'PRIVATE';
+const PRIVATE_PASSCODE_KEY = 'privatePasscode';
+
 function App() {
     const [roomCode, setRoomCode] = useState('');
     const [members, setMembers] = useState([]);
     const [expenses, setExpenses] = useState([]);
     const [balances, setBalances] = useState({});
     const [settlements, setSettlements] = useState([]);
+    const [privateEnabled, setPrivateEnabled] = useState(false);
     
     const socketRef = useRef(null);
+    const privatePasscodeRef = useRef(null);
 
     useEffect(() => {
         socketRef.current = io(window.location.origin);
@@ -32,6 +37,24 @@ function App() {
         socketRef.current.on('error_message', (msg) => {
             alert(msg);
         });
+
+        socketRef.current.on('private_denied', (msg) => {
+            privatePasscodeRef.current = null;
+            try { localStorage.removeItem(PRIVATE_PASSCODE_KEY); } catch (err) {}
+            alert(msg);
+        });
+
+        // Socket.IO drops room membership on reconnect (e.g. after Render wakes the server), so rejoin
+        socketRef.current.on('connect', () => {
+            if (privatePasscodeRef.current) {
+                socketRef.current.emit('join_private', privatePasscodeRef.current);
+            }
+        });
+
+        fetch('/api/private-enabled')
+            .then(res => res.json())
+            .then(data => setPrivateEnabled(Boolean(data.enabled)))
+            .catch(() => setPrivateEnabled(false));
 
         const urlParams = new URLSearchParams(window.location.search);
         const codeFromUrl = urlParams.get('room');
@@ -95,7 +118,18 @@ function App() {
         socketRef.current.emit('join_room', code);
     };
 
+    const joinPrivate = (passcode) => {
+        setMembers([]);
+        setExpenses([]);
+        setBalances({});
+        setSettlements([]);
+        privatePasscodeRef.current = passcode;
+        try { localStorage.setItem(PRIVATE_PASSCODE_KEY, passcode); } catch (err) {}
+        socketRef.current.emit('join_private', passcode);
+    };
+
     const leaveRoom = () => {
+        privatePasscodeRef.current = null;
         setRoomCode('');
         setMembers([]);
         setExpenses([]);
@@ -181,8 +215,11 @@ function App() {
 
             <RoomManager 
                 roomCode={roomCode}
+                isPrivate={roomCode === PRIVATE_CODE}
+                privateEnabled={privateEnabled}
                 onCreateRoom={createRoom}
                 onJoinRoom={joinRoom}
+                onJoinPrivate={joinPrivate}
                 onLeaveRoom={leaveRoom}
             />
 
