@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#f2f4f6" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#10151b" media="(prefers-color-scheme: dark)">
     <title>Split the Bill</title>
     <link rel="stylesheet" href="style.css">
     
@@ -15,8 +18,10 @@
 <body>
     <div id="root"></div>
 
-    <!-- Shared settlement maths (also used by server.js) -->
+    <!-- Shared settlement maths (also used by server.js), display helpers, receipt image -->
     <script src="lib/settle.js"></script>
+    <script src="lib/ui.js"></script>
+    <script src="lib/receipt.js"></script>
 
     <!-- Modular Component Scripts -->
     <script type="text/babel" src="components/RoomManager.js"></script>

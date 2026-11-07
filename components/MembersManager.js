@@ -1,44 +1,57 @@
+function Avatar({ name, members, size }) {
+    return (
+        <span className={`avatar ${size === 'small' ? 'small' : ''}`} style={{ background: memberTint(members, name) }} aria-hidden="true">
+            {initials(name)}
+        </span>
+    );
+}
+
 function MembersManager({ members, onAddMember, onRemoveMember }) {
     const [newMemberName, setNewMemberName] = React.useState('');
 
-    const handleAdd = () => {
-        if (newMemberName.trim()) {
-            onAddMember(newMemberName.trim());
+    const handleAdd = (e) => {
+        e.preventDefault();
+        const name = newMemberName.trim();
+        if (name) {
+            onAddMember(name);
             setNewMemberName('');
         }
     };
 
     return (
-        <section className="card">
-            <h2>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="section-icon"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                Group Members
-            </h2>
-            <div className="input-group">
-                <input 
-                    type="text" 
-                    value={newMemberName} 
-                    onChange={(e) => setNewMemberName(e.target.value)} 
-                    onKeyUp={(e) => e.key === 'Enter' && handleAdd()} 
-                    placeholder="Enter name (e.g., Ivanka)"
+        <section className="card" aria-labelledby="people-title">
+            <div className="card-header">
+                <h2 id="people-title">People</h2>
+                <span className="label-mono">{members.length} in group</span>
+            </div>
+            {members.length === 0 ? (
+                <p className="empty-hint">Add everyone who's splitting, starting with you.</p>
+            ) : (
+                <ul className="people-list">
+                    {members.map(m => (
+                        <li key={m} className="person-chip">
+                            <Avatar name={m} members={members} />
+                            <span className="person-name">{m}</span>
+                            <button type="button" className="chip-remove" onClick={() => onRemoveMember(m)} aria-label={`Remove ${m}`}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            <form className="input-group" onSubmit={handleAdd}>
+                <label htmlFor="new-person" className="visually-hidden">Add a person</label>
+                <input
+                    id="new-person"
+                    type="text"
+                    value={newMemberName}
+                    onChange={(e) => setNewMemberName(e.target.value)}
+                    placeholder="Add a name"
+                    maxLength={50}
+                    autoComplete="off"
                 />
-                <button onClick={handleAdd} className="btn primary icon-btn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Add
-                </button>
-            </div>
-            <div className="tags-list">
-                {members.length === 0 ? (
-                    <span className="empty-hint">No members added yet. Add names above to get started.</span>
-                ) : (
-                    members.map(m => (
-                        <span key={m} className="tag">
-                            {m}
-                            <button type="button" className="remove" onClick={() => onRemoveMember(m)} aria-label={`Remove ${m}`}>&times;</button>
-                        </span>
-                    ))
-                )}
-            </div>
+                <button type="submit" className="btn secondary">Add</button>
+            </form>
         </section>
     );
 }

@@ -99,71 +99,56 @@ function ExpenseForm({ members, onAddExpense }) {
         });
     };
 
+    const amountNum = parseFloat(form.amount) || 0;
+    const customTotal = Object.values(form.customShares).reduce((a, b) => a + (parseFloat(b) || 0), 0);
+    const eachPays = form.splitWith.length ? amountNum / form.splitWith.length : 0;
+
     return (
-        <section className="card">
-            <h2>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="section-icon"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 6v12"/></svg>
-                Add New Expense
-            </h2>
-            <form onSubmit={handleSubmit}>
-                <div className="form-field">
-                    <label>Description / Item</label>
-                    <input 
-                        type="text" 
-                        value={form.title} 
-                        onChange={(e) => setForm({ ...form, title: e.target.value })} 
-                        placeholder="e.g. Dinner, Grab, Coffee" 
-                        required 
+        <section className="card" aria-labelledby="new-expense-title">
+            <h2 id="new-expense-title">New expense</h2>
+            <form className="stack" onSubmit={handleSubmit}>
+                <div className="field">
+                    <label htmlFor="exp-title" className="label-mono">What was it</label>
+                    <input
+                        id="exp-title"
+                        type="text"
+                        value={form.title}
+                        onChange={(e) => setForm({ ...form, title: e.target.value })}
+                        placeholder="Dinner, Grab, coffee…"
+                        required
                     />
                 </div>
 
-                <div className="form-field">
-                    <label>Split Type</label>
-                    <div className="mode-toggle-group">
-                        <button 
-                            type="button" 
-                            className={`toggle-btn ${splitMode === 'EQUAL' ? 'active' : ''}`}
-                            onClick={() => setSplitMode('EQUAL')}
-                        >
-                            Equal Split
-                        </button>
-                        <button 
-                            type="button" 
-                            className={`toggle-btn ${splitMode === 'CUSTOM' ? 'active' : ''}`}
-                            onClick={() => {
-                                setSplitMode('CUSTOM');
-                                setForm(prev => ({ ...prev, amount: Object.values(prev.customShares).reduce((a, b) => a + (parseFloat(b) || 0), 0) || '' }));
-                            }}
-                        >
-                            Custom Share Amounts
-                        </button>
+                <div className="field-row">
+                    <div className="field">
+                        <label htmlFor="exp-amount" className="label-mono">Amount</label>
+                        <div className="money-input">
+                            <span aria-hidden="true">₱</span>
+                            <input
+                                id="exp-amount"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                inputMode="decimal"
+                                value={form.amount}
+                                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                                placeholder="0.00"
+                                readOnly={splitMode === 'CUSTOM'}
+                                required
+                            />
+                        </div>
                     </div>
-                </div>
-
-                <div className="form-row">
-                    <div className="form-field">
-                        <label>Total Amount (₱)</label>
-                        <input 
-                            type="number" 
-                            step="0.01" 
-                            min="0" 
-                            value={form.amount} 
-                            onChange={(e) => setForm({ ...form, amount: e.target.value })} 
-                            placeholder="0.00" 
-                            readOnly={splitMode === 'CUSTOM'}
-                            required 
-                        />
-                    </div>
-                    <div className="form-field">
-                        <label>Paid By</label>
-                        <select 
-                            value={form.payer} 
-                            onChange={(e) => setForm({ ...form, payer: e.target.value })} 
+                    <div className="field">
+                        <label htmlFor="exp-payer" className="label-mono">Paid by</label>
+                        <select
+                            id="exp-payer"
+                            value={form.payer}
+                            onChange={(e) => setForm({ ...form, payer: e.target.value })}
                             required
                             disabled={members.length === 0}
                         >
                             {members.length === 0 ? (
-                                <option value="">Add a member first</option>
+                                <option value="">Add a person first</option>
                             ) : (
                                 members.map(m => <option key={m} value={m}>{m}</option>)
                             )}
@@ -171,48 +156,84 @@ function ExpenseForm({ members, onAddExpense }) {
                     </div>
                 </div>
 
-                {splitMode === 'EQUAL' ? (
-                    <div className="form-field">
-                        <label>Split Among</label>
-                        <div className="checkbox-grid">
-                            {members.length === 0 ? (
-                                <span className="empty-hint">Add group members above first.</span>
-                            ) : (
-                                members.map(m => (
-                                    <label key={m} className="checkbox-item">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={form.splitWith.includes(m)} 
-                                            onChange={() => toggleSplit(m)} 
-                                        /> {m}
-                                    </label>
-                                ))
-                            )}
-                        </div>
+                <div className="field">
+                    <span className="label-mono" id="split-type-label">Split</span>
+                    <div className="segmented" role="group" aria-labelledby="split-type-label">
+                        <button
+                            type="button"
+                            aria-pressed={splitMode === 'EQUAL'}
+                            onClick={() => setSplitMode('EQUAL')}
+                        >
+                            Equally
+                        </button>
+                        <button
+                            type="button"
+                            aria-pressed={splitMode === 'CUSTOM'}
+                            onClick={() => {
+                                setSplitMode('CUSTOM');
+                                setForm(prev => ({ ...prev, amount: Object.values(prev.customShares).reduce((a, b) => a + (parseFloat(b) || 0), 0) || '' }));
+                            }}
+                        >
+                            Exact amounts
+                        </button>
                     </div>
-                ) : (
-                    <div className="form-field">
-                        <label>Exact Amount Per Person (₱)</label>
-                        <div className="custom-shares-list">
+
+                    {members.length === 0 ? (
+                        <p className="empty-hint">Add people first.</p>
+                    ) : splitMode === 'EQUAL' ? (
+                        <div className="pill-row" role="group" aria-label="Split between">
                             {members.map(m => (
-                                <div key={m} className="custom-share-row">
-                                    <span>{m}</span>
-                                    <input 
-                                        type="number" 
-                                        step="0.01"
-                                        placeholder="0.00"
-                                        value={form.customShares[m] || ''}
-                                        onChange={(e) => handleCustomShareChange(m, e.target.value)}
-                                    />
+                                <button
+                                    key={m}
+                                    type="button"
+                                    className="pill"
+                                    aria-pressed={form.splitWith.includes(m)}
+                                    onClick={() => toggleSplit(m)}
+                                >
+                                    {m}
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="share-list">
+                            {members.map(m => (
+                                <div key={m} className="share-row">
+                                    <label htmlFor={`share-${m}`}>{m}</label>
+                                    <div className="money-input compact">
+                                        <span aria-hidden="true">₱</span>
+                                        <input
+                                            id={`share-${m}`}
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            inputMode="decimal"
+                                            placeholder="0.00"
+                                            value={form.customShares[m] || ''}
+                                            onChange={(e) => handleCustomShareChange(m, e.target.value)}
+                                        />
+                                    </div>
                                 </div>
                             ))}
                         </div>
-                    </div>
+                    )}
+                </div>
+
+                {members.length > 0 && (
+                    splitMode === 'EQUAL' ? (
+                        <div className="preview-bar">
+                            <span>{form.splitWith.length ? 'Each person pays' : 'Pick at least one person'}</span>
+                            {form.splitWith.length > 0 && <span className="mono">₱{formatMoney(eachPays)}</span>}
+                        </div>
+                    ) : (
+                        <div className="preview-bar">
+                            <span>Adds up to</span>
+                            <span className="mono">₱{formatMoney(customTotal)}</span>
+                        </div>
+                    )
                 )}
 
-                <button type="submit" className="btn success full-width icon-btn" disabled={members.length === 0}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Add Expense
+                <button type="submit" className="btn dark large full-width" disabled={members.length === 0}>
+                    Add expense
                 </button>
             </form>
         </section>

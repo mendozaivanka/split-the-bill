@@ -231,53 +231,53 @@ function App() {
         emitStateChange(members, updatedExpenses);
     };
 
-    return (
-        <div className="app-container">
-            <header className="app-header">
-                <h1>💸 Split the Bill</h1>
-                <p>Settle your expenses in seconds</p>
-            </header>
+    const isPrivate = roomCode === PRIVATE_CODE;
 
-            <RoomManager 
+    return (
+        <div className="app">
+            <RoomManager
                 roomCode={roomCode}
-                isPrivate={roomCode === PRIVATE_CODE}
+                isPrivate={isPrivate}
                 privateEnabled={privateEnabled}
+                peopleCount={members.length}
                 onCreateRoom={createRoom}
                 onJoinRoom={joinRoom}
                 onJoinPrivate={joinPrivate}
                 onLeaveRoom={leaveRoom}
             />
 
-            <div className="grid-layout">
-                <div className="column">
-                    <MembersManager 
-                        members={members} 
-                        onAddMember={addMember} 
-                        onRemoveMember={removeMember} 
+            <main className="layout">
+                <div className="col-side">
+                    <MembersManager
+                        members={members}
+                        onAddMember={addMember}
+                        onRemoveMember={removeMember}
                     />
-                    <ExpenseForm 
-                        members={members} 
-                        onAddExpense={addExpense} 
+                    <ExpenseForm
+                        members={members}
+                        onAddExpense={addExpense}
                     />
                 </div>
 
-                <div className="column">
-                    <DynamicLedger 
-                        expenses={expenses} 
-                        members={members} 
-                        onUpdateExpense={updateExpense} 
-                        onDeleteExpense={deleteExpense} 
-                        onToggleSplit={toggleExpenseSplit} 
+                <div className="col-main">
+                    <SummaryTiles expenses={expenses} settlements={settlements} />
+                    <DynamicLedger
+                        expenses={expenses}
+                        members={members}
+                        onUpdateExpense={updateExpense}
+                        onDeleteExpense={deleteExpense}
+                        onToggleSplit={toggleExpenseSplit}
                         onUpdateCustomShare={updateCustomShare}
                     />
-                    <SettlementsSummary 
-                        balances={balances} 
-                        settlements={settlements} 
-                        expenses={expenses} 
-                        hasExpenses={expenses.length > 0} 
+                    <SettlementsSummary
+                        balances={balances}
+                        settlements={settlements}
+                        expenses={expenses}
+                        roomCode={roomCode}
+                        isPrivate={isPrivate}
                     />
                 </div>
-            </div>
+            </main>
         </div>
     );
 }

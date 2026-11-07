@@ -1,15 +1,29 @@
-function RoomManager({ roomCode, isPrivate, privateEnabled, onCreateRoom, onJoinRoom, onJoinPrivate, onLeaveRoom }) {
+// The Nordic Rose mark: a pink rounded square with a horizon line and a small sun
+function RoseMark({ size = 30 }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 52 52" aria-hidden="true">
+            <rect x="2" y="2" width="48" height="48" rx="14" fill="var(--primary)" />
+            <line x1="12" y1="31" x2="40" y2="31" stroke="var(--primary-foreground)" strokeWidth="3" strokeLinecap="round" />
+            <circle cx="33" cy="22" r="4.5" fill="var(--primary-foreground)" />
+        </svg>
+    );
+}
+
+// Top bar (always shown) plus the start card when you are not in a room yet
+function RoomManager({ roomCode, isPrivate, privateEnabled, peopleCount, onCreateRoom, onJoinRoom, onJoinPrivate, onLeaveRoom }) {
     const [inputCode, setInputCode] = React.useState('');
     const [copied, setCopied] = React.useState(false);
     const [passcode, setPasscode] = React.useState(() => {
         try { return localStorage.getItem('privatePasscode') || ''; } catch (err) { return ''; }
     });
 
-    const handleOpenPrivate = () => {
+    const handleOpenPrivate = (e) => {
+        e.preventDefault();
         if (passcode.trim()) onJoinPrivate(passcode.trim());
     };
 
-    const handleJoin = () => {
+    const handleJoin = (e) => {
+        e.preventDefault();
         if (inputCode.trim()) {
             onJoinRoom(inputCode.trim());
             setInputCode('');
@@ -18,10 +32,9 @@ function RoomManager({ roomCode, isPrivate, privateEnabled, onCreateRoom, onJoin
 
     const handleShare = async () => {
         if (!roomCode) return;
-
         const shareData = {
             title: 'Split the Bill',
-            text: `Join my expense splitting room on Split the Bill! Room Code: ${roomCode}`,
+            text: `Join my Split the Bill room. Code: ${roomCode}`,
             url: `${window.location.origin}?room=${roomCode}`
         };
 
@@ -30,7 +43,8 @@ function RoomManager({ roomCode, isPrivate, privateEnabled, onCreateRoom, onJoin
                 await navigator.share(shareData);
                 return;
             } catch (err) {
-                if (err.name !== 'AbortError') console.error('Share error:', err);
+                if (err.name === 'AbortError') return;
+                console.error('Share error:', err);
             }
         }
 
@@ -40,95 +54,93 @@ function RoomManager({ roomCode, isPrivate, privateEnabled, onCreateRoom, onJoin
             setTimeout(() => setCopied(false), 2500);
         } catch (err) {
             console.error('Clipboard write error:', err);
-            alert(`Room Code: ${roomCode}`);
+            alert(`Room code: ${roomCode}\n${shareData.url}`);
         }
     };
 
     return (
-        <section className="card room-header-card">
-            {!roomCode ? (
-                <div className="room-setup-wrapper">
-                    <div className="room-action">
-                        <h3>Host a New Group</h3>
-                        <button onClick={onCreateRoom} className="btn primary full-width icon-btn">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                            Create Shared Room Code
-                        </button>
+        <>
+            <header className="topbar">
+                <div className="topbar-inner">
+                    <div className="brand">
+                        <RoseMark />
+                        <span className="brand-name">Split the Bill</span>
                     </div>
-                    <div className="room-divider">OR</div>
-                    <div className="room-action">
-                        <h3>Join Friends' Room</h3>
-                        <div className="input-group">
-                            <input 
-                                type="text" 
-                                value={inputCode} 
-                                onChange={(e) => setInputCode(e.target.value.toUpperCase())} 
-                                onKeyUp={(e) => e.key === 'Enter' && handleJoin()} 
-                                placeholder="ENTER 6-DIGIT CODE" 
-                                maxLength={6}
-                            />
-                            <button onClick={handleJoin} className="btn success">Join</button>
+                    {roomCode && (
+                        <div className="topbar-actions">
+                            <span className="status-pill">
+                                <span className="status-dot" aria-hidden="true"></span>
+                                <span className="label-mono">{isPrivate ? 'Private · saved' : `Live · ${peopleCount} ${peopleCount === 1 ? 'person' : 'people'}`}</span>
+                            </span>
+                            {isPrivate ? (
+                                <span className="room-code">PRIVATE</span>
+                            ) : (
+                                <span className="room-code" aria-label={`Room code ${roomCode}`}>{roomCode}</span>
+                            )}
+                            {!isPrivate && (
+                                <button type="button" onClick={handleShare} className="btn primary icon-btn">
+                                    {copied ? (
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+                                    ) : (
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" /><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" /></svg>
+                                    )}
+                                    {copied ? 'Link copied' : 'Copy invite link'}
+                                </button>
+                            )}
+                            <button type="button" onClick={onLeaveRoom} className="btn outline">Leave</button>
                         </div>
-                    </div>
-                    {privateEnabled && (
-                        <>
-                            <div className="room-divider">OR</div>
-                            <div className="room-action">
-                                <h3>Our Private Ledger</h3>
-                                <div className="input-group">
-                                    <input 
-                                        type="password" 
-                                        value={passcode} 
-                                        onChange={(e) => setPasscode(e.target.value)} 
-                                        onKeyUp={(e) => e.key === 'Enter' && handleOpenPrivate()} 
-                                        placeholder="PASSCODE" 
-                                        autoComplete="current-password"
-                                    />
-                                    <button onClick={handleOpenPrivate} className="btn primary icon-btn">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                                        Open
-                                    </button>
-                                </div>
-                            </div>
-                        </>
                     )}
                 </div>
-            ) : (
-                <div className="active-room-bar">
-                    <div className="room-info">
-                        <span className="live-badge">
-                            <span className="live-dot"></span> {isPrivate ? 'PRIVATE · SAVED' : 'LIVE SESSION'}
-                        </span>
-                        {isPrivate ? (
-                            <>
-                                <h2>Our Private Ledger</h2>
-                                <span className="sub-hint">Every change is saved automatically. Only people with the passcode can open it.</span>
-                            </>
-                        ) : (
-                            <>
-                                <h2>Room Code: <span className="code-highlight">{roomCode}</span></h2>
-                                <span className="sub-hint">Share this code with your friends so they can contribute in real-time.</span>
-                            </>
+                <span className="horizon-sun" aria-hidden="true"></span>
+            </header>
+
+            {!roomCode && (
+                <section className="card start-card" aria-labelledby="start-title">
+                    <div className="start-intro">
+                        <h1 id="start-title">Split a bill with your group.</h1>
+                        <p>Start a room and share the link. Everyone adds what they paid, and the app works out the fewest payments to settle up.</p>
+                    </div>
+                    <div className="start-actions">
+                        <div className="start-action">
+                            <span className="label-mono">New group</span>
+                            <button type="button" onClick={onCreateRoom} className="btn primary large full-width">Start a room</button>
+                        </div>
+                        <form className="start-action" onSubmit={handleJoin}>
+                            <label className="label-mono" htmlFor="join-code">Have a code?</label>
+                            <div className="input-group">
+                                <input
+                                    id="join-code"
+                                    type="text"
+                                    className="code-input"
+                                    value={inputCode}
+                                    onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+                                    placeholder="K7Q2MD"
+                                    maxLength={6}
+                                    autoComplete="off"
+                                />
+                                <button type="submit" className="btn dark">Join</button>
+                            </div>
+                        </form>
+                        {privateEnabled && (
+                            <form className="start-action" onSubmit={handleOpenPrivate}>
+                                <label className="label-mono" htmlFor="private-pass">Our private ledger</label>
+                                <div className="input-group">
+                                    <input
+                                        id="private-pass"
+                                        type="password"
+                                        value={passcode}
+                                        onChange={(e) => setPasscode(e.target.value)}
+                                        placeholder="Passcode"
+                                        autoComplete="current-password"
+                                    />
+                                    <button type="submit" className="btn secondary">Open</button>
+                                </div>
+                            </form>
                         )}
                     </div>
-                    <div className="room-actions-group">
-                        {!isPrivate && <button onClick={handleShare} className="btn primary small icon-btn">
-                            {copied ? (
-                                <>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                    Link Copied!
-                                </>
-                            ) : (
-                                <>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                                    Share Link
-                                </>
-                            )}
-                        </button>}
-                        <button onClick={onLeaveRoom} className="btn outline danger small">Leave Session</button>
-                    </div>
-                </div>
+                    <p className="start-note">You can also add people and expenses below without a room. They just won't sync.</p>
+                </section>
             )}
-        </section>
+        </>
     );
 }
