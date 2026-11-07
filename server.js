@@ -12,8 +12,15 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '1mb' }));
 
-// Serve static files directly from the repository root directory
-app.use(express.static(path.join(__dirname)));
+// Browser files live in public/. Vercel serves that folder itself; this covers running the server anywhere else
+const PUBLIC_DIR = path.join(__dirname, 'public');
+app.use(express.static(PUBLIC_DIR));
+
+// The settlement maths is shared with the browser. It stays outside public/ because Vercel leaves
+// public/ out of the server bundle, so the server hands it to the browser itself.
+app.get('/lib/settle.js', (req, res) => {
+    res.type('application/javascript').sendFile(path.join(__dirname, 'lib', 'settle.js'));
+});
 
 // Configure Socket.IO with CORS
 const io = new Server(server, {
@@ -282,7 +289,9 @@ setInterval(() => {
 
 // Fallback to index.html in the root directory for single page application routing
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    // A missing file (script, stylesheet, image) is a real 404, not the page
+    if (path.extname(req.path)) return res.status(404).send('Not found');
+    res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
 async function start() {
