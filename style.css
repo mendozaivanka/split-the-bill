@@ -1,26 +1,46 @@
-@import url('https://fonts.googleapis.com/css2?family=Georgia:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
+@import url('nordic-rose/tokens.css');
 
+/* Nordic Rose type, self-hosted (no Google Fonts requests) */
+@font-face {
+    font-family: 'Manrope Variable';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 200 800;
+    src: url('nordic-rose/fonts/manrope-latin-wght-normal.woff2') format('woff2-variations');
+}
+@font-face {
+    font-family: 'Red Hat Mono Variable';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 300 700;
+    src: url('nordic-rose/fonts/red-hat-mono-latin-wght-normal.woff2') format('woff2-variations');
+}
+
+/* App aliases over the Nordic Rose tokens, so light, dark and high contrast all follow the system */
 :root {
-    /* Claude-Inspired Editorial Palette */
-    --bg: #fbf9f5;             /* Warm Off-White / Parchment */
-    --card-bg: #ffffff;        /* Crisp White for Elevated Cards */
-    --card-subtle: #f3efe6;    /* Warm Soft Cream for Container Boxes */
-    --card-border: #e6dfd5;    /* Soft Muted Border */
-    --text-primary: #1f1e1c;   /* Deep Charcoal for High Contrast */
-    --text-muted: #6e6a64;     /* Muted Warm Grey */
-    --accent: #da7756;          /* Claude Signature Terracotta / Burnt Orange */
-    --accent-hover: #c46242;    /* Deep Terracotta Hover */
-    --accent-subtle: #f7e8e1;   /* Very Soft Terracotta Wash */
-    --success: #10b981;
-    --danger: #e11d48;
-    --warning: #d97706;
+    color-scheme: light dark;
+    --bg: var(--background);
+    --card-bg: var(--card);
+    --card-subtle: var(--muted);
+    --card-border: var(--border);
+    --text-primary: var(--foreground);
+    --text-muted: var(--muted-foreground);
+    --accent: var(--primary);                 /* Rosas: the one action colour */
+    --accent-ink: var(--primary-foreground);  /* text on Rosas */
+    --accent-hover: var(--primary-strong);    /* pink text, focus */
+    --accent-subtle: var(--rosas-1);
+    --success: var(--fjord-ink);              /* gets money back */
+    --danger: var(--destructive);
+    --owes: var(--primary-strong);            /* owes money */
+    --font-sans: 'Manrope Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'Red Hat Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 * { 
     box-sizing: border-box; 
     margin: 0; 
     padding: 0; 
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+    font-family: var(--font-sans); 
 }
 
 body { 
@@ -42,7 +62,7 @@ body {
 }
 
 .app-header h1 { 
-    font-family: 'Georgia', serif;
+    font-family: var(--font-sans);
     font-size: 2.25rem; 
     font-weight: 400; 
     color: var(--text-primary);
@@ -76,9 +96,9 @@ body {
 .card { 
     background: var(--card-bg); 
     border: 1px solid var(--card-border); 
-    border-radius: 14px; 
+    border-radius: var(--radius); 
     padding: 22px; 
-    box-shadow: 0 1px 3px rgba(31, 30, 28, 0.04);
+    box-shadow: none;
     transition: border-color 0.2s ease;
 }
 
@@ -94,7 +114,7 @@ body {
 }
 
 .card h2 { 
-    font-family: 'Georgia', serif;
+    font-family: var(--font-sans);
     font-size: 1.15rem; 
     font-weight: 400; 
     margin-bottom: 14px; 
@@ -125,7 +145,7 @@ input[type="text"], input[type="number"], input[type="password"], select {
 input:focus, select:focus { 
     outline: none; 
     border-color: var(--accent); 
-    background: #ffffff; 
+    background: var(--card); 
 }
 
 .form-field { 
@@ -212,7 +232,8 @@ input:focus, select:focus {
 
 .btn.primary { 
     background: var(--accent); 
-    color: #ffffff; 
+    color: var(--accent-ink); 
+    font-weight: 700;
 }
 
 .btn.primary:hover { 
@@ -221,15 +242,15 @@ input:focus, select:focus {
 
 .btn.success { 
     background: var(--text-primary); 
-    color: #ffffff; 
+    color: var(--background); 
 }
 
 .btn.success:hover { 
-    background: #372e32; 
+    opacity: 0.88; 
 }
 
 .btn.outline { 
-    background: #ffffff; 
+    background: var(--card); 
     border: 1px solid var(--card-border); 
     color: var(--text-primary); 
 }
@@ -284,7 +305,7 @@ input:focus, select:focus {
 .amount-input-wrapper { 
     display: flex; 
     align-items: center; 
-    background: #ffffff; 
+    background: var(--card); 
     border: 1px solid var(--card-border); 
     border-radius: 6px; 
     padding-left: 10px; 
@@ -317,7 +338,7 @@ input:focus, select:focus {
 }
 
 .pill-btn { 
-    background: #ffffff; 
+    background: var(--card); 
     border: 1px solid var(--card-border); 
     color: var(--text-muted); 
     padding: 3px 10px; 
@@ -356,14 +377,14 @@ input:focus, select:focus {
 }
 
 .balance-card .amount { 
-    font-family: 'Georgia', serif;
+    font-family: var(--font-sans);
     font-size: 1.05rem;
     font-weight: 700; 
     margin-top: 4px; 
 }
 
 .balance-card .amount.positive { color: var(--success); }
-.balance-card .amount.negative { color: var(--danger); }
+.balance-card .amount.negative { color: var(--owes); }
 
 .divider { 
     border: none; 
@@ -384,7 +405,7 @@ input:focus, select:focus {
 }
 
 .settlement-item .pay-amount { 
-    font-family: 'Georgia', serif;
+    font-family: var(--font-sans);
     font-weight: 700; 
     color: var(--accent-hover); 
 }
@@ -413,7 +434,7 @@ input:focus, select:focus {
 }
 
 .toggle-btn.active {
-    background: #ffffff;
+    background: var(--card);
     color: var(--text-primary);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     font-weight: 600;
@@ -497,7 +518,7 @@ input:focus, select:focus {
 
 .code-highlight {
     color: var(--accent-hover);
-    font-family: monospace;
+    font-family: var(--font-mono);
     letter-spacing: 2px;
 }
 
@@ -606,3 +627,26 @@ input:focus, select:focus {
     border-bottom-color: var(--accent) !important;
     outline: none !important;
 }
+
+/* Nordic Rose additions */
+.balance-card .amount, .settlement-item .pay-amount, input[type="number"] {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+}
+.app-header h1, .card h2 { font-weight: 750; }
+.app-header p { font-style: normal; }
+.form-field label, .room-action h3, .split-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+input[type="text"], input[type="number"], input[type="password"], select { border-color: var(--input); }
+input:focus-visible, select:focus-visible, button:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+.btn.danger { color: var(--danger); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.live-dot { background-color: #3fae7a; }
+::selection { background: var(--primary); color: var(--primary-foreground); }
