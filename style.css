@@ -191,6 +191,12 @@ input:focus, select:focus {
 .tag .remove { 
     cursor: pointer; 
     color: var(--text-muted); 
+    background: none;
+    border: 0;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 6px;
 }
 
 .tag .remove:hover { 

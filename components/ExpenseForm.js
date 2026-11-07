@@ -8,12 +8,27 @@ function ExpenseForm({ members, onAddExpense }) {
         customShares: {}
     });
 
+    // Keep the form in step with the group: drop people who were removed, include people who were added
+    const prevMembersRef = React.useRef(members);
     React.useEffect(() => {
-        setForm(prev => ({
-            ...prev,
-            payer: prev.payer || members[0] || '',
-            splitWith: prev.splitWith.length ? prev.splitWith : [...members]
-        }));
+        const previous = prevMembersRef.current;
+        prevMembersRef.current = members;
+        const added = members.filter(m => !previous.includes(m));
+        setForm(prev => {
+            const customShares = {};
+            Object.entries(prev.customShares).forEach(([person, val]) => {
+                if (members.includes(person)) customShares[person] = val;
+            });
+            const splitWith = prev.splitWith.length
+                ? [...prev.splitWith.filter(m => members.includes(m)), ...added.filter(m => !prev.splitWith.includes(m))]
+                : [...members];
+            return {
+                ...prev,
+                payer: members.includes(prev.payer) ? prev.payer : (members[0] || ''),
+                splitWith,
+                customShares
+            };
+        });
     }, [members]);
 
     const handleCustomShareChange = (person, val) => {
@@ -57,7 +72,6 @@ function ExpenseForm({ members, onAddExpense }) {
         if (totalAmt <= 0) return alert('Please enter a valid amount.');
 
         onAddExpense({
-            id: Date.now(),
             title: form.title,
             amount: totalAmt,
             payer: form.payer,
@@ -116,7 +130,10 @@ function ExpenseForm({ members, onAddExpense }) {
                         <button 
                             type="button" 
                             className={`toggle-btn ${splitMode === 'CUSTOM' ? 'active' : ''}`}
-                            onClick={() => setSplitMode('CUSTOM')}
+                            onClick={() => {
+                                setSplitMode('CUSTOM');
+                                setForm(prev => ({ ...prev, amount: Object.values(prev.customShares).reduce((a, b) => a + (parseFloat(b) || 0), 0) || '' }));
+                            }}
                         >
                             Custom Share Amounts
                         </button>

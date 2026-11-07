@@ -1,3 +1,37 @@
+// Lets the field be empty or half-typed ("1.") while editing; the number is sent as you type and tidied on blur
+function LedgerAmountInput({ value, onCommit, readOnly, label }) {
+    const [text, setText] = React.useState(String(value ?? ''));
+    const focused = React.useRef(false);
+
+    // Take outside changes (other people, custom shares) unless this field is being edited
+    React.useEffect(() => {
+        if (!focused.current) setText(String(value ?? ''));
+    }, [value]);
+
+    return (
+        <input
+            type="number"
+            step="0.01"
+            min="0"
+            className="edit-input amount-val"
+            aria-label={label}
+            value={text}
+            readOnly={readOnly}
+            placeholder="0.00"
+            onFocus={() => { focused.current = true; }}
+            onChange={(e) => {
+                setText(e.target.value);
+                const num = parseFloat(e.target.value);
+                onCommit(Number.isFinite(num) && num >= 0 ? num : 0);
+            }}
+            onBlur={() => {
+                focused.current = false;
+                setText(String(value ?? ''));
+            }}
+        />
+    );
+}
+
 function DynamicLedger({ expenses, members, onUpdateExpense, onDeleteExpense, onToggleSplit, onUpdateCustomShare }) {
     return (
         <section className="card">
@@ -21,14 +55,11 @@ function DynamicLedger({ expenses, members, onUpdateExpense, onDeleteExpense, on
                                 />
                                 <div className="amount-input-wrapper">
                                     <span>₱</span>
-                                    <input 
-                                        type="number" 
-                                        step="0.01"
-                                        className="edit-input amount-val"
-                                        value={exp.amount} 
-                                        onChange={(e) => onUpdateExpense(exp.id, 'amount', parseFloat(e.target.value) || 0)}
-                                        placeholder="0.00"
+                                    <LedgerAmountInput
+                                        value={exp.amount}
+                                        onCommit={(num) => onUpdateExpense(exp.id, 'amount', num)}
                                         readOnly={exp.splitMode === 'CUSTOM'}
+                                        label={`Amount for ${exp.title || 'expense'}`}
                                     />
                                 </div>
                                 <select 
@@ -38,7 +69,7 @@ function DynamicLedger({ expenses, members, onUpdateExpense, onDeleteExpense, on
                                 >
                                     {members.map(m => <option key={m} value={m}>{m}</option>)}
                                 </select>
-                                <button className="btn outline small danger icon-only-btn" onClick={() => onDeleteExpense(exp.id)} title="Delete expense">
+                                <button className="btn outline small danger icon-only-btn" onClick={() => onDeleteExpense(exp.id)} title="Delete expense" aria-label={`Delete ${exp.title || 'expense'}`}>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                                 </button>
                             </div>

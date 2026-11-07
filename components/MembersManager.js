@@ -34,7 +34,7 @@ function MembersManager({ members, onAddMember, onRemoveMember }) {
                     members.map(m => (
                         <span key={m} className="tag">
                             {m}
-                            <span className="remove" onClick={() => onRemoveMember(m)}>&times;</span>
+                            <button type="button" className="remove" onClick={() => onRemoveMember(m)} aria-label={`Remove ${m}`}>&times;</button>
                         </span>
                     ))
                 )}

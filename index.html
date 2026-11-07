@@ -7,13 +7,16 @@
     <link rel="stylesheet" href="style.css">
     
     <!-- React, Babel, and Socket.IO CDNs -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <div id="root"></div>
+
+    <!-- Shared settlement maths (also used by server.js) -->
+    <script src="lib/settle.js"></script>
 
     <!-- Modular Component Scripts -->
     <script type="text/babel" src="components/RoomManager.js"></script>

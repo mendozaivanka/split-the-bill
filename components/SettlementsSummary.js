@@ -2,7 +2,7 @@ function SettlementsSummary({ balances, settlements, expenses, hasExpenses }) {
     const [copied, setCopied] = React.useState(false);
     const formatCurrency = (val) => (val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-    const copySummary = () => {
+    const copySummary = async () => {
         if (!hasExpenses) return alert('No expenses logged to copy.');
 
         let text = `🧾 SPLIT THE BILL\n`;
@@ -47,9 +47,14 @@ function SettlementsSummary({ balances, settlements, expenses, hasExpenses }) {
             }
         });
 
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2500);
+        } catch (err) {
+            console.error('Clipboard write error:', err);
+            alert('Could not copy automatically. Here is the summary to copy by hand:\n\n' + text);
+        }
     };
 
     return (
